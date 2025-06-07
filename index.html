@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dots and Boxes</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        /* CSS Variables for colors - LIGHT MODE DEFAULTS */
+        /* These define the base color scheme for the light mode */
+        :root {
+            --bg-color: #f0f4f8; /* Soft light blue-grey background */
+            --header-color: #2c3e50; /* Darker blue-grey for text/headings */
+            --board-bg-color: #ffffff; /* Pure white for the game board itself */
+            --player1-color: #3498db; /* Clear blue for Player 1 */
+            --player2-color: #e74c3c; /* Striking red for Player 2 */
+            --dot-color: #555; /* Dark grey for dots */
+            --line-default-color: #ccc; /* Light grey for inactive lines */
+            --line-hover-color: #aeb6bf; /* Gentle grey-blue on line hover */
+            --box-p1-bg: #dbeaff; /* Light blue fill for P1 completed boxes */
+            --box-p2-bg: #ffe0e0; /* Light red fill for P2 completed boxes */
+            --box-text-color: #333; /* Color of emoji/text inside boxes */
+            --button-bg-primary: #2ecc71; /* Green for primary actions (Start) */
+            --button-bg-secondary: #f39c12; /* Orange for secondary actions (Reset) */
+            --button-text-color: #ffffff; /* White text on buttons */
+            --border-radius-soft: 8px; /* Standard border-radius for rounded corners */
+            --shadow-light: 0 4px 8px rgba(0, 0, 0, 0.08); /* Subtle shadow */
+            --shadow-medium: 0 6px 12px rgba(0, 0, 0, 0.12); /* Slightly stronger shadow */
+            --toggle-bg: #ccc; /* Background of the theme toggle switch */
+            --toggle-circle: #fff; /* Color of the movable circle in the toggle */
+
+            /* Define core game element dimensions as CSS variables for easier consistency and dynamic grid generation */
+            --dot-dim: 8px; /* Diameter of dots */
+            --line-thickness: 4px; /* Thickness of horizontal and vertical lines */
+            --box-square-dim: 35px; /* Side length of the square boxes (and effective length of lines) */
+        }
+
+        /* DARK MODE VARIABLES */
+        /* When 'dark-mode' class is applied to body, these variables override the light mode defaults */
+        body.dark-mode {
+            --bg-color: #2c3e50; /* Dark blue-grey background */
+            --header-color: #ecf0f1; /* Light text */
+            --board-bg-color: #34495e; /* Darker board background */
+            --player1-color: #5dade2; /* Lighter blue for dark mode P1 */
+            --player2-color: #e77d70; /* Lighter red for dark mode P2 */
+            --dot-color: #bbb; /* Lighter dots */
+            --line-default-color: #555; /* Darker default line */
+            --line-hover-color: #777; /* Darker gentle hover */
+            --box-p1-bg: #3d5a80; /* Darker blue fill for P1 completed boxes */
+            --box-p2-bg: #8c4242; /* Darker red fill for P2 completed boxes */
+            --box-text-color: #eee; /* Lighter text inside boxes */
+            --button-bg-primary: #27ae60; /* Slightly darker green */
+            --button-bg-secondary: #d35400; /* Slightly darker orange */
+            --button-text-color: #ffffff;
+            --shadow-light: 0 4px 8px rgba(0, 0, 0, 0.3); /* Stronger shadows for depth */
+            --shadow-medium: 0 6px 12px rgba(0, 0, 0, 0.4);
+            --toggle-bg: #555; /* Darker toggle background */
+            --toggle-circle: #fff; /* White toggle circle */
+        }
+
+        /* Base Body Styles */
+        body {
+            display: flex;
+            flex-direction: column; /* Stack elements vertically */
+            align-items: center; /* Center horizontally */
+            font-family: 'Quicksand', sans-serif; /* Apply chosen font */
+            background-color: var(--bg-color); /* Use background color variable */
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh; /* Ensure body takes full viewport height */
+            color: var(--header-color); /* Use text color variable */
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition for theme change */
+        }
+
+        h1 {
+            margin-bottom: 25px;
+            color: var(--header-color);
+            font-size: 2.5em;
+            font-weight: 700;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.05); /* Subtle text shadow */
+        }
+
+        /* Controls Section Styling */
+        #controls {
+            margin-bottom: 30px;
+            padding: 20px 30px;
+            background-color: var(--board-bg-color);
+            border-radius: var(--border-radius-soft);
+            box-shadow: var(--shadow-light);
+            display: flex;
+            align-items: center;
+            gap: 25px; /* Space between control elements */
+            flex-wrap: wrap; /* Allow elements to wrap on smaller screens */
+            justify-content: center; /* Center elements when they wrap */
+            font-size: 1.1em;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease; /* Smooth transition */
+        }
+
+        input[type="number"] {
+            width: 70px;
+            padding: 8px 12px;
+            font-size: 1em;
+            border: 1px solid var(--line-default-color); /* Use variable for border */
+            background-color: var(--board-bg-color); /* Use variable for input background */
+            color: var(--header-color); /* Use variable for input text color */
+            border-radius: 5px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.3s, color 0.3s; /* Smooth transitions */
+        }
+        input[type="number"]:focus {
+            border-color: var(--player1-color);
+            box-shadow: 0 0 0 3px var(--player1-color); /* Highlight on focus */
+        }
+
+        /* Radio Button Styling (custom appearance) */
+        label {
+            font-weight: 600;
+            user-select: none; /* Prevent text selection */
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--header-color);
+        }
+        label input[type="radio"] {
+            -webkit-appearance: none; /* Hide default radio button */
+            -moz-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--player1-color); /* Border color based on player 1 */
+            background-color: var(--board-bg-color); /* Background for radio */
+            border-radius: 50%;
+            display: inline-block;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        label input[type="radio"]:checked {
+            background-color: var(--player1-color); /* Filled when checked */
+            border-color: var(--player1-color);
+        }
+        label input[type="radio"]:checked::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--button-text-color); /* White checkmark */
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* Center the checkmark */
+        }
+
+        /* Button Styling */
+        .button-style {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: var(--button-text-color);
+            border: none;
+            border-radius: var(--border-radius-soft);
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease, box-shadow 0.3s ease;
+            box-shadow: var(--shadow-light);
+        }
+        .button-style:hover {
+            transform: translateY(-2px); /* Lift effect on hover */
+            box-shadow: var(--shadow-medium);
+        }
+        .button-style:active {
+            transform: translateY(0); /* Press effect on click */
+            box-shadow: none;
+        }
+
+        #startGameBtn {
+            background-color: var(--button-bg-primary);
+        }
+        #startGameBtn:hover {
+            background-color: #27ae60; /* Darker green on hover (can be a var too) */
+        }
+
+        #resetBtn {
+            background-color: var(--button-bg-secondary);
+        }
+        #resetBtn:hover {
+            background-color: #e67e22; /* Darker orange on hover (can be a var too) */
+        }
+
+        /* Game Board Layout */
+        #gameBoard {
+            display: grid;
+            background-color: var(--board-bg-color);
+            padding: 15px;
+            border-radius: var(--border-radius-soft);
+            box-shadow: var(--shadow-medium);
+            gap: 0; /* Critical for precise grid alignment */
+            user-select: none;
+            touch-action: manipulation; /* Improves touch responsiveness */
+            transition: background-color 0.3s ease, box-shadow 0.3s ease; /* Smooth transition */
+        }
+
+        .dot {
+            width: var(--dot-dim);
+            height: var(--dot-dim);
+            background: var(--dot-color);
+            border-radius: 50%;
+            align-self: center; /* Center dot vertically in its grid cell */
+            justify-self: center; /* Center dot horizontally in its grid cell */
+            transition: background-color 0.3s ease; /* Smooth transition */
+        }
+
+        .line {
+            background: var(--line-default-color);
+            cursor: pointer;
+            transition: background 0.2s ease;
+            position: relative;
+        }
+        .line:not(.active):hover {
+            background-color: var(--line-hover-color); /* Highlight on hover */
+        }
+
+        .line.horizontal {
+            width: var(--box-square-dim); /* Line spans the width of a box cell */
+            height: var(--line-thickness); /* Line thickness */
+            align-self: center; /* Vertically center within its thin grid track */
+            justify-self: stretch; /* Horizontally stretch to fill its track */
+        }
+        .line.vertical {
+            width: var(--line-thickness); /* Line thickness */
+            height: var(--box-square-dim); /* Line spans the height of a box cell */
+            justify-self: center; /* Horizontally center within its thin grid track */
+            align-self: stretch; /* Vertically stretch to fill its track */
+        }
+
+        .line.active.p1 {
+            background-color: var(--player1-color);
+            cursor: default; /* No more hover/click after active */
+        }
+        .line.active.p2 {
+            background-color: var(--player2-color);
+            cursor: default;
+        }
+
+        .box {
+            width: var(--box-square-dim);
+            height: var(--box-square-dim);
+            text-align: center;
+            font-size: 1.5em; /* Size of the emoji in completed boxes */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth transition */
+            position: relative;
+            overflow: hidden;
+            color: var(--box-text-color);
+        }
+        .box.p1-filled {
+            background-color: var(--box-p1-bg); /* Filled background for Player 1 */
+        }
+        .box.p2-filled {
+            background-color: var(--box-p2-bg); /* Filled background for Player 2 */
+        }
+
+        #status {
+            margin-top: 25px;
+            font-size: 1.3em;
+            font-weight: 600;
+            color: var(--header-color);
+            text-align: center;
+            min-height: 1.5em; /* Prevents layout shift when text changes */
+            transition: color 0.3s ease; /* Smooth transition */
+        }
+
+        /* Dark/Light Mode Toggle Switch Styles */
+        #theme-toggle-container {
+            position: absolute; /* Position it absolutely relative to body */
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 1000; /* Ensure it's above other elements */
+            color: var(--header-color); /* Icon color */
+            transition: color 0.3s ease;
+        }
+
+        #theme-toggle {
+            display: none; /* Hide the actual checkbox */
+        }
+
+        .toggle-switch {
+            width: 50px;
+            height: 25px;
+            background-color: var(--toggle-bg); /* Use theme variable for background */
+            border-radius: 25px; /* Pill shape */
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.2); /* Inner shadow for depth */
+        }
+
+        .toggle-switch::before {
+            content: '';
+            width: 21px;
+            height: 21px;
+            background-color: var(--toggle-circle); /* Use theme variable for circle */
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease, background-color 0.3s ease; /* Smooth movement and color change */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Circle shadow */
+        }
+
+        #theme-toggle:checked + .toggle-switch {
+            background-color: var(--player1-color); /* Active toggle color when dark mode is on */
+        }
+
+        #theme-toggle:checked + .toggle-switch::before {
+            transform: translateX(25px); /* Move circle to the right when checked */
+        }
+
+        /* --- Responsive Adjustments (for screens up to 600px wide) --- */
+        @media (max-width: 600px) {
+            /* Adjust core game element dimensions for smaller screens */
+            :root {
+                --dot-dim: 6px;
+                --line-thickness: 3px;
+                --box-square-dim: 28px;
+            }
+            h1 {
+                font-size: 2em; /* Smaller heading */
+            }
+            #controls {
+                flex-direction: column; /* Stack controls vertically */
+                gap: 15px; /* Reduce gap */
+                padding: 15px 20px; /* Reduce padding */
+            }
+            input[type="number"] {
+                width: 50px; /* Smaller input field */
+                font-size: 0.9em;
+            }
+            .button-style {
+                padding: 10px 20px; /* Smaller buttons */
+                font-size: 1em;
+            }
+            #gameBoard {
+                padding: 10px; /* Reduce board padding */
+            }
+            #theme-toggle-container {
+                top: 15px;
+                right: 15px;
+                font-size: 0.9em; /* Smaller toggle text/icons */
+            }
+            .toggle-switch {
+                width: 40px; /* Slightly smaller toggle switch */
+                height: 20px;
+            }
+            .toggle-switch::before {
+                width: 16px;
+                height: 16px;
+                top: 2px;
+                left: 2px;
+            }
+            #theme-toggle:checked + .toggle-switch::before {
+                transform: translateX(19px); /* Adjust circle translation for smaller toggle */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="theme-toggle-container">
+        <i class="fas fa-sun"></i> <input type="checkbox" id="theme-toggle">
+        <label for="theme-toggle" class="toggle-switch"></label>
+        <i class="fas fa-moon"></i> </div>
+
+    <h1>Dots and Boxes</h1>
+
+    <div id="controls">
+        <label for="boardSizeInput">Board Size (2-10):</label>
+        <input type="number" id="boardSizeInput" min="2" max="10" value="4" />
+        <label><input type="radio" name="mode" value="pvp" checked /> Player vs Player</label>
+        <label><input type="radio" name="mode" value="pvc" /> Player vs Computer</label>
+        <button onclick="startGame()" id="startGameBtn" class="button-style">Start Game</button>
+    </div>
+
+    <div id="gameBoard"></div>
+    <p id="status"></p>
+    <button onclick="resetGame()" id="resetBtn" class="button-style">Restart Game</button>
+
+    <audio id="resetSound" src="click.mp3" preload="auto"></audio>
+    <audio id="clickSound" src="click.mp3" preload="auto"></audio>
+    <audio id="completeSound" src="box.mp3" preload="auto"></audio>
+
+    <script>
+        // DOM element references
+        const board = document.getElementById("gameBoard");
+        const status = document.getElementById("status");
+        const boardSizeInput = document.getElementById("boardSizeInput");
+        const resetSound = document.getElementById("resetSound");
+        const clickSound = document.getElementById("clickSound");
+        const completeSound = document.getElementById("completeSound");
+        const themeToggle = document.getElementById('theme-toggle');
+
+        // Game state variables
+        let size = 4; // Default board size
+        let currentPlayer = 1; // 1 for Player 1, 2 for Player 2/Computer
+        let scores = [0, 0]; // Scores for Player 1 and Player 2
+        let mode = 'pvp'; // 'pvp' for Player vs Player, 'pvc' for Player vs Computer
+        let computerThinking = false; // Flag to prevent player clicks during AI turn
+
+        // --- Dark/Light Mode Logic ---
+        // Function to apply the selected theme
+        function applyTheme(theme) {
+            document.body.classList.toggle('dark-mode', theme === 'dark');
+            themeToggle.checked = (theme === 'dark'); // Set the toggle switch state
+        }
+
+        // On page load, check for a saved theme preference in localStorage
+        // If no preference, default to 'light' mode.
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        applyTheme(savedTheme); // Apply the saved or default theme
+
+        // Event listener for the theme toggle switch
+        themeToggle.addEventListener('change', () => {
+            if (themeToggle.checked) {
+                applyTheme('dark');
+                localStorage.setItem('theme', 'dark'); // Save preference
+            } else {
+                applyTheme('light');
+                localStorage.setItem('theme', 'light'); // Save preference
+            }
+        });
+        // --- End Dark/Light Mode Logic ---
+
+
+        // Function to start the game based on user input
+        function startGame() {
+            size = parseInt(boardSizeInput.value); // Get board size from input
+            // Validate board size
+            if (isNaN(size) || size < 2 || size > 10) {
+                alert("Please enter a board size between 2 and 10.");
+                return;
+            }
+            // Get selected game mode (PvP or PvC)
+            mode = document.querySelector('input[name="mode"]:checked').value;
+            resetGame(); // Reset and start a new game
+        }
+
+        // Function to dynamically create the game grid based on board size
+        function createGrid() {
+            // Helper to get current computed CSS variable values (important for responsiveness)
+            const getCssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name);
+            const dotDim = getCssVar('--dot-dim');
+            const boxSquareDim = getCssVar('--box-square-dim');
+
+            let gridColumns = [];
+            let gridRows = [];
+
+            // A board of 'size' N has (N+1) rows/columns of dots and (N) rows/columns of lines/boxes.
+            // The grid template needs to alternate between dot dimensions and box/line dimensions.
+            // Example: size=2: Dot(8px) Line/Box(35px) Dot(8px) Line/Box(35px) Dot(8px)
+            for (let i = 0; i < size; i++) {
+                gridColumns.push(dotDim);      // Column for a dot
+                gridColumns.push(boxSquareDim); // Column for a line/box
+                gridRows.push(dotDim);         // Row for a dot
+                gridRows.push(boxSquareDim);    // Row for a line/box
+            }
+            // Add the last dot row/column to complete the grid
+            gridColumns.push(dotDim);
+            gridRows.push(dotDim);
+
+            // Apply the dynamically generated grid template to the gameBoard
+            board.style.gridTemplateColumns = gridColumns.join(' ');
+            board.style.gridTemplateRows = gridRows.join(' ');
+
+            board.innerHTML = ""; // Clear any existing grid elements
+
+            const gridDimension = size * 2 + 1; // Total number of grid tracks (e.g., 4x4 board -> 9x9 grid)
+
+            // Populate the grid with dots, lines, and boxes
+            for (let row = 0; row < gridDimension; row++) {
+                for (let col = 0; col < gridDimension; col++) {
+                    if (row % 2 === 0 && col % 2 === 0) { // Dots are at even row, even col intersections
+                        const dot = document.createElement("div");
+                        dot.className = "dot";
+                        board.appendChild(dot);
+                    } else if (row % 2 === 0) { // Horizontal lines are at even row, odd col
+                        const line = document.createElement("div");
+                        line.className = "line horizontal";
+                        line.dataset.row = row;
+                        line.dataset.col = col;
+                        line.addEventListener("click", handleClick); // Add click listener
+                        board.appendChild(line);
+                    } else if (col % 2 === 0) { // Vertical lines are at odd row, even col
+                        const line = document.createElement("div");
+                        line.className = "line vertical";
+                        line.dataset.row = row;
+                        line.dataset.col = col;
+                        line.addEventListener("click", handleClick); // Add click listener
+                        board.appendChild(line);
+                    } else { // Boxes are at odd row, odd col
+                        const box = document.createElement("div");
+                        box.className = "box";
+                        box.dataset.row = row;
+                        box.dataset.col = col;
+                        board.appendChild(box);
+                    }
+                }
+            }
+            updateStatus(); // Update game status display
+        }
+
+        // --- Core Game Logic ---
+
+        // Handles a click on a line by a player (human)
+        function handleClick(e) {
+            if (computerThinking) return; // Prevent clicks if computer is playing
+
+            const line = e.target;
+            if (line.classList.contains("active")) return; // Ignore if line is already taken
+
+            playClickSound(); // Play line click sound
+
+            // Make the move and check if any boxes were completed
+            const boxCompleted = makeMove(line, currentPlayer);
+
+            // Centralized logic for determining the next turn
+            handleNextTurn(boxCompleted);
+
+            updateStatus(); // Update game status display
+            checkGameOver(); // Check if the game has ended
+        }
+
+        // Centralized function to manage whose turn it is next
+        function handleNextTurn(boxCompleted) {
+            if (boxCompleted) {
+                // If a box was completed, the current player gets another turn.
+                // No change to currentPlayer.
+                if (mode === 'pvc' && currentPlayer === 2) {
+                    computerThinking = true; // Set flag: computer is thinking
+                    updateStatus(); // Update status message
+                    setTimeout(() => {
+                        const compBoxCompleted = computerMakeStrategicMove(); // Computer makes its move
+                        computerThinking = false; // Reset flag: computer finished thinking
+                        handleNextTurn(compBoxCompleted); // Recursively call to check if computer gets another turn
+                        updateStatus(); // Update status after computer's move
+                        checkGameOver(); // Check game over again
+                    }, 700); // Small delay for "thinking" effect
+                }
+            } else {
+                // If no box was completed, switch turns.
+                currentPlayer = currentPlayer === 1 ? 2 : 1; // Toggle player (1 to 2, or 2 to 1)
+
+                if (mode === 'pvc' && currentPlayer === 2) {
+                    computerThinking = true; // Set flag: computer is thinking
+                    updateStatus(); // Update status message
+                    setTimeout(() => {
+                        const compBoxCompleted = computerMakeStrategicMove(); // Computer makes its move
+                        computerThinking = false; // Reset flag
+                        handleNextTurn(compBoxCompleted); // Check if computer gets another turn (in case it just scored)
+                        updateStatus(); // Update status after computer's move
+                        checkGameOver(); // Check game over again
+                    }, 700); // Small delay
+                }
+            }
+        }
+
+        // Function to make a move (activate a line) and check for completed boxes
+        function makeMove(line, player) {
+            line.classList.add("active", `p${player}`); // Mark line as active for the current player
+            const row = +line.dataset.row; // Get row from data-attribute
+            const col = +line.dataset.col; // Get column from data-attribute
+
+            let boxCompleted = false;
+
+            // Check potential boxes around the just-drawn line
+            // A horizontal line at (R, C) can complete boxes at (R-1, C) and (R+1, C)
+            // A vertical line at (R, C) can complete boxes at (R, C-1) and (R, C+1)
+            if (row % 2 === 0) { // If it's a horizontal line (even row)
+                boxCompleted = checkBox(row - 1, col, player) || checkBox(row + 1, col, player);
+            } else { // If it's a vertical line (odd row)
+                boxCompleted = checkBox(row, col - 1, player) || checkBox(row, col + 1, player);
+            }
+
+            if (boxCompleted) {
+                playCompleteSound(); // Play sound if a box was completed
+            }
+            return boxCompleted; // Return true if any box was completed, false otherwise
+        }
+
+        // Function to check if a specific box is completed and update it
+        function checkBox(row, col, player) {
+            // Ensure the box coordinates are valid (odd row, odd col)
+            if (row < 0 || col < 0 || row >= size * 2 + 1 || col >= size * 2 + 1 || row % 2 === 0 || col % 2 === 0) {
+                return false;
+            }
+
+            // Get references to the four lines surrounding this box
+            const top = document.querySelector(`.line.horizontal[data-row="${row - 1}"][data-col="${col}"]`);
+            const bottom = document.querySelector(`.line.horizontal[data-row="${row + 1}"][data-col="${col}"]`);
+            const left = document.querySelector(`.line.vertical[data-row="${row}"][data-col="${col - 1}"]`);
+            const right = document.querySelector(`.line.vertical[data-row="${row}"][data-col="${col + 1}"]`);
+            const box = document.querySelector(`.box[data-row="${row}"][data-col="${col}"]`);
+
+            // Check if all four lines are active and the box isn't already filled
+            if (
+                top && bottom && left && right && // All lines exist
+                top.classList.contains("active") &&
+                bottom.classList.contains("active") &&
+                left.classList.contains("active") &&
+                right.classList.contains("active") &&
+                box && !box.classList.contains("p1-filled") && !box.classList.contains("p2-filled") // Box exists and is not yet filled
+            ) {
+                box.textContent = player === 1 ? "🟦" : "🟥"; // Set emoji based on player
+                box.classList.add(player === 1 ? "p1-filled" : "p2-filled"); // Add class for styling
+                scores[player - 1]++; // Increment player's score
+                return true; // Box was completed
+            }
+            return false; // Box was not completed
+        }
+
+        // Updates the status message displaying current player and scores
+        function updateStatus() {
+            if (computerThinking) {
+                status.textContent = "Computer is thinking...";
+            } else {
+                status.textContent = `Player ${currentPlayer}'s turn | Scores - P1: ${scores[0]} P2: ${scores[1]}`;
+            }
+        }
+
+        // Checks if the game has ended
+        function checkGameOver() {
+            const totalBoxes = size * size;
+            const filledBoxes = document.querySelectorAll(".box.p1-filled, .box.p2-filled").length;
+
+            if (filledBoxes === totalBoxes) {
+                let message = `Game Over!\nP1: ${scores[0]} | P2: ${scores[1]}\n`;
+                if (scores[0] > scores[1]) {
+                    message += "Player 1 Wins!";
+                } else if (scores[1] > scores[0]) {
+                    message += mode === 'pvc' ? "Computer Wins!" : "Player 2 Wins!"; // Differentiate winner message for PvC
+                } else {
+                    message += "It's a tie!";
+                }
+                setTimeout(() => alert(message), 100); // Show alert after a short delay
+            }
+        }
+
+        // Resets the game to a new state
+        function resetGame() {
+            resetSound.currentTime = 0;
+            resetSound.play();
+            currentPlayer = 1;
+            scores = [0, 0];
+            computerThinking = false;
+            createGrid(); // Re-create the grid for a new game
+        }
+
+        // --- Computer AI Logic ---
+        // Computer's move strategy: tries to complete a box, otherwise picks randomly.
+        // Returns true if a box was completed, false otherwise.
+        function computerMakeStrategicMove() {
+            let availableLines = Array.from(document.querySelectorAll('.line:not(.active)'));
+            let chosenLine = null;
+
+            // Strategy 1: Find a move that completes a box (highest priority)
+            for (let i = 0; i < availableLines.length; i++) {
+                const line = availableLines[i];
+                // Use checkBoxSim to check if this line would complete a box *without* making the move
+                if (wouldCompleteBox(line, 2)) {
+                    chosenLine = line;
+                    break; // Found a scoring move, take it!
+                }
+            }
+
+            // Strategy 2 (Advanced): Avoid moves that set up an opponent to complete a box.
+            // This is more complex and not fully implemented in this basic AI.
+            // You could add logic here, e.g., to find a "safe" move if no scoring move is available.
+
+            // Strategy 3: If no strategic move, choose a random available line
+            if (!chosenLine && availableLines.length > 0) {
+                const randomIndex = Math.floor(Math.random() * availableLines.length);
+                chosenLine = availableLines[randomIndex];
+            }
+
+            if (chosenLine) {
+                playClickSound(); // Play sound for computer's chosen move
+                // Make the chosen move and return whether it completed a box
+                return makeMove(chosenLine, 2);
+            }
+            return false; // No move could be made (implies game is over or no lines left)
+        }
+
+        // Helper function to simulate checking a box without actually modifying the DOM or scores
+        function wouldCompleteBox(line, player) {
+            const row = +line.dataset.row;
+            const col = +line.dataset.col;
+
+            // Temporarily add 'active' class to simulate the move
+            line.classList.add("active", `p${player}`);
+
+            let completesABox = false;
+            // Check potential boxes for the current line using checkBoxSim
+            if (row % 2 === 0) { // Horizontal line
+                completesABox = checkBoxSim(row - 1, col) || checkBoxSim(row + 1, col);
+            } else { // Vertical line
+                completesABox = checkBoxSim(row, col - 1) || checkBoxSim(row, col + 1);
+            }
+
+            // Remove 'active' class to revert simulation - crucial!
+            line.classList.remove("active", `p${player}`);
+
+            return completesABox;
+        }
+
+        // Simulates `checkBox` but only returns true/false without modifying DOM or scores
+        function checkBoxSim(row, col) {
+            // Ensure valid box coordinates (odd row, odd col)
+            if (row < 0 || col < 0 || row >= size * 2 + 1 || col >= size * 2 + 1 || row % 2 === 0 || col % 2 === 0) {
+                return false;
+            }
+            const top = document.querySelector(`.line.horizontal[data-row="${row - 1}"][data-col="${col}"]`);
+            const bottom = document.querySelector(`.line.horizontal[data-row="${row + 1}"][data-col="${col}"]`);
+            const left = document.querySelector(`.line.vertical[data-row="${row}"][data-col="${col - 1}"]`);
+            const right = document.querySelector(`.line.vertical[data-row="${row}"][data-col="${col + 1}"]`);
+            const box = document.querySelector(`.box[data-row="${row}"][data-col="${col}"]`);
+
+            return top && bottom && left && right &&
+                   top.classList.contains("active") &&
+                   bottom.classList.contains("active") &&
+                   left.classList.contains("active") &&
+                   right.classList.contains("active") &&
+                   box && !box.classList.contains("p1-filled") && !box.classList.contains("p2-filled"); // Check if box exists and isn't already filled
+        }
+
+        // --- Audio Functions ---
+        function playClickSound() {
+            clickSound.currentTime = 0; // Rewind to start
+            clickSound.play();
+        }
+
+        function playCompleteSound() {
+            completeSound.currentTime = 0; // Rewind to start
+            completeSound.play();
+        }
+
+        // Initial grid creation when the page first loads
+        createGrid();
+    </script>
+</body>
+</html>
